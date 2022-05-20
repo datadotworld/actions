@@ -1,0 +1,21 @@
+name: send-event
+on:
+  workflow_call:
+
+jobs:
+  send-event:
+    runs-on: ubuntu-latest
+    env:
+      RUDDERSTACK_USER: ${{secrets.RUDDERSTACK_USER}}
+      RUDDERSTACK_URL: ${{secrets.RUDDERSTACK_URL}}
+      USER_ID: ${{github.event.sender.login}}
+      EVENT: github_${{github.event_name}} # Note: this will be the table name
+      PROPERTIES: ${{toJSON(github.event)}}
+    steps:
+    - run: |
+        JSON_TEMPLATE='{"userId":"%s","event":"%s","properties":%s}\n'
+        printf "${JSON_TEMPLATE}" "${USER_ID}" "${EVENT}" "${PROPERTIES}" > track.json
+        cat track.json
+        curl -u "${RUDDERSTACK_USER}" "${RUDDERSTACK_URL}" -d "@track.json" --header "Content-Type: application/json"
+
+
